@@ -1,4 +1,5 @@
 using Distributed, SlurmClusterManager
+using Dates
 
 addprocs(SlurmManager())
 
@@ -13,27 +14,22 @@ end
 println(hosts)
 println(pids)
 
-@everywhere include("./tsp.jl")
+include("./utils.jl")
+include("./visualize.jl")
+@everywhere include("./algorithm1.jl")
 
-runs = 1000
-n = 300
-node_coords = rand(0:10000, n, 2)
+tsp_name = "d493"
+log_time = now()
+algo = "algo1"
+log_name = "$algo-$tsp_name-$log_time"
+log_file = open(log_name, "w")
+
+n, node_coords = tsp_instance_parser("tsp_instances/$tsp_name.tsp")
+# n, node_coords = 10, rand(1:100,10,2)
 dist_matrix = get_distance_matrix(node_coords)
 tour = [i for i in 1:n]
-tours = [shuffle(tour) for i in 1:runs]
+final_tour = algorithm1(n, dist_matrix, 48, log_file)
+final_length = get_tour_length(final_tour, dist_matrix)
+println(final_length)
+draw_tours([final_tour], node_coords, output_path="results/plots/tour.png", close_tour=false)
 
-function test1()
-    println("Started")
-    println("Current: ", get_tour_length(tour, dist_matrix))
-    # res = Vector{Vector}(undef, runs)
-    # @sync @distributed for i = 1:runs
-    #     println(i)
-    #     res[i] = two_opt(tours[i], dist_matrix)
-    # end
-    res = pmap(two_opt_wrapper(two_opt, dist_matrix), tours)
-    res = map((x) -> get_tour_length(x, dist_matrix), res)
-    print(res)
-    println("Done")
-end
-
-println(@elapsed test1())
