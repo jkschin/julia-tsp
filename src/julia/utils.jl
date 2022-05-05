@@ -142,7 +142,7 @@ end
 tour and selected paths are distinct sets. The union of both gives all 
 vertices in the graph.
 """
-function get_tour_from_tour_and_selected_paths(tour, selected_paths)
+function get_tour_from_tour_and_selected_paths(tour, selected_paths, dist_matrix)
     tour = two_opt(tour, dist_matrix)
     final_tour = reduce(vcat, [i[2] for i in selected_paths])
     final_tour = vcat(tour, final_tour)

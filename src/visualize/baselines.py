@@ -31,6 +31,7 @@ if __name__ == "__main__":
     for filename in filenames:
         data = read_data(os.path.join(folder, filename))
         if len(data) != 0:
-            print(data[-1])
+            print(filename, data[-1])
         add_trajectory(fig, data, filename)
+    print("Writing Image...")
     fig.write_image("results/plots/trajectory_plot.png")
