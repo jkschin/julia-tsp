@@ -1,3 +1,5 @@
+include("./heuristics.jl")
+
 using Random
 
 # test with: get_vertices_in_selected_paths(([2, [1,2]], [2, [3,4]]))
@@ -24,14 +26,16 @@ selected_paths = [[2, [1, 3]], [2, [2,4]], [2, [15, 11]], [2, [5, 10]]]
 a = algorithm2_construction_method(n, selected_paths)
 length(a[1])
 """
-function algorithm2_construction_method(n, selected_paths)
+function algorithm2_construction_method(n, dist_matrix, selected_paths)
     if length(selected_paths) == 0
         tour = shuffle([i for i in 1:n])
+        tour = random_insertion(tour, dist_matrix)
         indexes = [1 for i in 1:n]
         return tour, indexes
     end
     if length(selected_paths) == 1
         diff = get_vertices_not_in_selected_paths(n, selected_paths)
+        diff = random_insertion(shuffle(diff), dist_matrix)
         tour = vcat(selected_paths[1][2], shuffle(diff))
         start_idx = length(selected_paths[1][2]) + 1
         indexes = [0 for i in 1:length(tour)]
@@ -65,6 +69,7 @@ function algorithm2_construction_method(n, selected_paths)
             # indexes = vcat(indexes, [start_idx, end_idx])
         else
             path = pop!(list_b)
+            path = random_insertion(path, dist_matrix)
             l = length(path)
             tour = vcat(tour, path)
             indexes = vcat(indexes, [1 for i in 1:l])
@@ -83,6 +88,7 @@ function algorithm2_construction_method(n, selected_paths)
     end
     while length(list_b) != 0
         path = pop!(list_b)
+        path = random_insertion(path, dist_matrix)
         l = length(path)
         tour = vcat(tour, path)
         indexes = vcat(indexes, [1 for i in 1:l])
@@ -126,7 +132,9 @@ function algorithm2(n, dist_matrix, voters, limit_t)
         println("$iters, $best_length")
         if stuck == 10
             println("Got stuck. Restarting!")
-            selected_paths = []
+            l_sel_path = length(selected_paths)
+            println("Number of selected paths: $l_sel_path")
+            selected_paths = sample(selected_paths, div(l_sel_path, 2))
             stuck = 0
         end
 
@@ -143,7 +151,7 @@ function algorithm2(n, dist_matrix, voters, limit_t)
             break
         end
         
-        tours_indexes_pairs = [algorithm2_construction_method(n, selected_paths) for i in 1:voters]
+        tours_indexes_pairs = [algorithm2_construction_method(n, dist_matrix, selected_paths) for i in 1:voters]
         tours = map(x -> two_opt(x[1], dist_matrix, indexes=x[2]), tours_indexes_pairs)
         sets = map(x -> Set(get_bidirectional_arcs(x)), tours)
         intersecting_arcs = reduce(intersect, sets)
