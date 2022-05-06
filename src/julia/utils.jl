@@ -55,7 +55,7 @@ function tsp_instance_parser(filename)
         push!(node_coords, b)
     end
     n = parse(Int, headers[4])
-    node_coords = transpose(reduce(hcat,node_coords))
+    node_coords = Matrix(transpose(reduce(hcat,node_coords)))
     return n, node_coords
 end
 

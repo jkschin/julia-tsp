@@ -21,7 +21,11 @@ function algorithm1(n, dist_matrix, voters, limit_t)
     start_t = time()
     selected_paths = []
     tour = [i for i in 1:n]
+
     best_length = 1e10
+    best_tour = nothing
+    best_selected_paths = nothing
+
     stuck = 0
     iters = 0
 
@@ -53,10 +57,8 @@ function algorithm1(n, dist_matrix, voters, limit_t)
         intersecting_arcs = reduce(intersect, sets)
         paths = global_dfs(intersecting_arcs)
         if length(paths) != 0
-            stuck = 0
             selected_path = get_longest_path(paths)
         else
-            stuck += 1
             continue
             # selected_path = two_opt(tour, dist_matrix)
             # selected_path = (length(selected_path), two_opt(tour, dist_matrix))
@@ -68,7 +70,14 @@ function algorithm1(n, dist_matrix, voters, limit_t)
         # Logging Trajectory
         log_tour = get_tour_from_tour_and_selected_paths(tour, selected_paths, dist_matrix)
         log_tour_length = get_tour_length(log_tour, dist_matrix)
-        best_length = min(best_length, log_tour_length)
+
+        if log_tour_length >= best_length
+            stuck += 1
+        else
+            best_length = min(best_length, log_tour_length)
+            best_tour = tour
+            best_selected_paths = selected_paths
+        end
         push!(logs, [elapsed, log_tour_length, best_length])
 
         if iters % 5 == 0
@@ -80,7 +89,7 @@ function algorithm1(n, dist_matrix, voters, limit_t)
 
         iters += 1
     end
-    final_tour = get_tour_from_tour_and_selected_paths(tour, selected_paths, dist_matrix)
+    final_tour = get_tour_from_tour_and_selected_paths(best_tour, best_selected_paths, dist_matrix)
     final_tour_length = get_tour_length(final_tour, dist_matrix)
     return final_tour, final_tour_length, logs, path_memory, tour_memory
 end

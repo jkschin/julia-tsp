@@ -20,8 +20,7 @@ using Dates
 include("./utils.jl")
 include("./visualize.jl")
 @everywhere include("./algorithm1.jl")
-# @everywhere include("./algorithm2.jl")
-# algo1 and algo2 should take the same API.
+@everywhere include("./algorithm2.jl")
 
 ALGO1 = "ALGO1"
 ALGO2 = "ALGO2"
@@ -37,10 +36,10 @@ tsp_to_time_map = Dict(
 	VM1084 => 3200
 )
 
-runs = 10
+runs = 30
 
 tsp_names = [LIN318, D493, D657, VM1084]
-algos = [ALGO1]
+algos = [ALGO1, ALGO2]
 runs_list = [i for i in 1:runs]
 
 # Julia y u do dis and 1 index T_T
@@ -50,22 +49,19 @@ N_PROCS = nprocs() - 1
 println("TASK_ID: $TASK_ID, N_TASKS: $N_TASKS")
 println("NPROCS: $N_PROCS")
 
-tups = vec(collect(Base.Iterators.product(tsp_names, runs_list, algos)))
-
-# The shuffling is necessary as the default mapped tups if we don't shuffle
-# will result in all the small jobs running on one node, which is not 
-# what we want.
-tups = shuffle(tups)
+tups = vec(collect(Base.Iterators.product(runs_list, tsp_names, algos)))
 mapped_tups = map(x -> tups[x], collect(TASK_ID:N_TASKS:length(tups)))
 println("Running the following jobs on this node:")
 for tup in mapped_tups
 	println(tup)
 end
+flush(stdout)
 
 for tup in mapped_tups
-	tsp_name, _, algo = tup
+	_, tsp_name, algo = tup
 	limit_t = tsp_to_time_map[tsp_name]
 	println("STARTING $TASK_ID: $tup with time limit $limit_t")
+	flush(stdout)
 
 	rstring = uppercase(randstring(6))
 	log_time = now()
@@ -81,6 +77,8 @@ for tup in mapped_tups
 	tour_memory = nothing
 	if algo == ALGO1
 		final_tour, final_tour_length, logs, path_memory, tour_memory = algorithm1(n, dist_matrix, N_PROCS, limit_t)
+	else
+		final_tour, final_tour_length, logs, path_memory, tour_memory = algorithm2(n, dist_matrix, N_PROCS, limit_t)
 	end
 	save("results/runs/$log_name.jld", 
 		Dict(
